@@ -6,16 +6,22 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using WindowsForms_chat.ChatForm;
 
 namespace winforms_chat.ChatForm
 {
-	public partial class Chatbox : UserControl
-	{
+    public partial class Chatbox : UserControl
+    {
+        private CancellationTokenSource sendCts;
+        private bool isGenerating = false;
+
         public ChatboxInfo chatbox_info;
         public OpenFileDialog fileDialog = new OpenFileDialog();
         public string initialdirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        public IChatService ChatService { get; set; }
 
         public Chatbox(ChatboxInfo _chatbox_info)
         {
@@ -80,6 +86,15 @@ namespace winforms_chat.ChatForm
         //Cross-tested this with the Twilio API and the RingCentral API, and async messaging is the way to go.
         async void SendMessage(object sender, EventArgs e)
         {
+            // Toggle cancel
+            if (isGenerating)
+            {
+                sendCts?.Cancel();
+                sendButton.Text = "Send";
+                isGenerating = false;
+                return;
+            }
+
             string tonumber = phoneLabel.Text;
             string chatmessage = chatTextbox.Text;
 
@@ -145,6 +160,28 @@ namespace winforms_chat.ChatForm
                     AddMessage(textModel);
                     chatTextbox.Text = string.Empty;
                 }
+                // new part starts here
+                if (ChatService == null)
+                    return; // no backend connected
+
+                sendCts = new CancellationTokenSource();
+                isGenerating = true;
+                sendButton.Text = "Stop";
+
+                var reply = await ChatService.SendAsync(chatmessage, chatbox_info.Attachment, sendCts.Token);
+
+                if (reply != null)
+                    AddMessage(reply);
+            }
+            catch (OperationCanceledException)
+            {
+                AddMessage(new TextChatModel
+                {
+                    Author = "System",
+                    Body = "[Cancelled]",
+                    Inbound = true,
+                    Time = DateTime.Now
+                });
             }
             catch (Exception exc)
             {
@@ -158,6 +195,11 @@ namespace winforms_chat.ChatForm
                     Time = DateTime.Now
                 };
                 AddMessage(textModel);
+            }
+            finally
+            {
+                sendButton.Text = "Send";
+                isGenerating = false;
             }
         }
 
