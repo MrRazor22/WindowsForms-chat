@@ -44,6 +44,7 @@ namespace winforms_chat.ChatForm
             removeButton.Click += CancelAttachment;
 
             chatTextbox.KeyDown += OnEnter;
+            chatTextbox.ScrollBars = ScrollBars.Both;
 
             AddMessage(null);
         }
