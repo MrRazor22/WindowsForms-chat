@@ -93,10 +93,11 @@ namespace winforms_chat.ChatForm
             // Toggle cancel
             if (isGenerating)
             {
+                sendButton.Text = "Stopping...";
+                sendButton.Enabled = false;
+
                 sendCts?.Cancel();
-                sendButton.Text = "Send";
-                isGenerating = false;
-                return;
+                return; // do NOT touch isGenerating or button text here
             }
 
             string tonumber = phoneLabel.Text;
@@ -181,13 +182,13 @@ namespace winforms_chat.ChatForm
             }
             catch (OperationCanceledException)
             {
-                AddMessage(new TextChatModel
-                {
-                    Author = "System",
-                    Body = "[Cancelled]",
-                    Inbound = true,
-                    Time = DateTime.Now
-                });
+                //AddMessage(new TextChatModel
+                //{
+                //    Author = "System",
+                //    Body = "[Cancelled]",
+                //    Inbound = true,
+                //    Time = DateTime.Now
+                //});
             }
             catch (Exception exc)
             {
@@ -204,9 +205,12 @@ namespace winforms_chat.ChatForm
             }
             finally
             {
+                // only runs once the backend actually exits (either completed or canceled)
                 sendButton.Text = "Send";
+                sendButton.Enabled = true;
                 isGenerating = false;
             }
+
         }
         private void AddOrUpdateBubble(string text, string author)
         {
