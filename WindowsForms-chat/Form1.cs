@@ -20,6 +20,7 @@ namespace winforms_chat
         private void Form1_Load(object sender, EventArgs e)
         {
             ChatForm.ChatboxInfo cbi = new ChatForm.ChatboxInfo();
+            cbi.User = "User";
             cbi.NamePlaceholder = "testing";
             cbi.PhonePlaceholder = "(111) 222-3333";
 
