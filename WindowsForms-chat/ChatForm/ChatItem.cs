@@ -10,8 +10,8 @@ using System.Windows.Forms;
 
 namespace winforms_chat.ChatForm
 {
-	public partial class ChatItem : UserControl
-	{
+    public partial class ChatItem : UserControl
+    {
         public IChatModel ChatModel { get; set; }
 
         public ChatItem()
@@ -85,6 +85,16 @@ namespace winforms_chat.ChatForm
                 default:
                     break;
             }
+        }
+        public void UpdateText(string text)
+        {
+            if (bodyTextBox == null)
+                return;
+
+            bodyTextBox.Text = text;
+
+            // ensure the chat bubble resizes naturally
+            ResizeBubbles((int)((Parent?.Width ?? Width) * 0.6));
         }
 
         void DownloadAttachment(object sender, EventArgs e)

@@ -11,17 +11,31 @@ namespace WindowsForms_chat
 {
     public class MockChatService : IChatService
     {
-        public async Task<IChatModel?> SendAsync(string message, byte[]? attachment, CancellationToken token)
+        public string Name => "Mock Bot";
+
+        public async Task<string> SendAsync(
+            string message,
+            byte[]? attachment,
+            CancellationToken token,
+            Action<string>? onPartial = null)
         {
-            await Task.Delay(2000, token);
-            return new TextChatModel
+            var sb = new StringBuilder();
+
+            // Simulate partial streaming of the echo reply
+            string reply = $"Echo: {message}";
+            for (int i = 0; i < reply.Length; i++)
             {
-                Author = "Bot",
-                Body = $"Echo: {message}",
-                Inbound = true,
-                Time = DateTime.Now
-            };
+                token.ThrowIfCancellationRequested();
+                sb.Append(reply[i]);
+
+                if (i % 3 == 0) // every few characters, push an update
+                    onPartial?.Invoke(sb.ToString());
+
+                await Task.Delay(50, token); // simulate typing delay
+            }
+
+            // Final output
+            return sb.ToString();
         }
     }
-
 }

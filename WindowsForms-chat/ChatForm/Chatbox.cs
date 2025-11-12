@@ -1,10 +1,13 @@
 ﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -140,7 +143,12 @@ namespace winforms_chat.ChatForm
                     Time = DateTime.Now
                 };
             }
+            if (ChatService == null)
+                return; // no backend connected
 
+            sendCts = new CancellationTokenSource();
+            isGenerating = true;
+            sendButton.Text = "Stop";
             try
             {
                 /*
@@ -160,18 +168,15 @@ namespace winforms_chat.ChatForm
                     AddMessage(textModel);
                     chatTextbox.Text = string.Empty;
                 }
-                // new part starts here
-                if (ChatService == null)
-                    return; // no backend connected
 
-                sendCts = new CancellationTokenSource();
-                isGenerating = true;
-                sendButton.Text = "Stop";
+                var reply = await ChatService.SendAsync(
+                    chatmessage,
+                    chatbox_info.Attachment,
+                    sendCts.Token,
+                    partial => AddOrUpdateBubble(partial, ChatService.Name));
 
-                var reply = await ChatService.SendAsync(chatmessage, chatbox_info.Attachment, sendCts.Token);
-
-                if (reply != null)
-                    AddMessage(reply);
+                if (!string.IsNullOrWhiteSpace(reply))
+                    AddOrUpdateBubble(reply, ChatService.Name);
             }
             catch (OperationCanceledException)
             {
@@ -200,6 +205,36 @@ namespace winforms_chat.ChatForm
             {
                 sendButton.Text = "Send";
                 isGenerating = false;
+            }
+        }
+        private void AddOrUpdateBubble(string text, string author)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => AddOrUpdateBubble(text, author)));
+                return;
+            }
+            // Newest is always at top (because of BringToFront)
+            if (itemsPanel.Controls.Count > 0 &&
+                itemsPanel.Controls[0] is ChatItem top &&
+                top.ChatModel is TextChatModel tm &&
+                tm.Inbound &&
+                tm.Author == author)
+            {
+                // still generating — update this one
+                tm.Body = text;
+                top.UpdateText(text);
+            }
+            else
+            {
+                // start new bot message for this turn
+                AddMessage(new TextChatModel
+                {
+                    Author = author,
+                    Body = text,
+                    Inbound = true,
+                    Time = DateTime.Now
+                });
             }
         }
 

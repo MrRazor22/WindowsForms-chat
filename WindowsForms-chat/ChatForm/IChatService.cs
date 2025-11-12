@@ -10,6 +10,11 @@ namespace WindowsForms_chat.ChatForm
 {
     public interface IChatService
     {
-        Task<IChatModel?> SendAsync(string message, byte[]? attachment, CancellationToken token);
+        string Name { get; }  // The responder's display name
+        Task<string> SendAsync(
+            string message,
+            byte[]? attachment,
+            CancellationToken token,
+            Action<string>? onPartial = null);
     }
 }
