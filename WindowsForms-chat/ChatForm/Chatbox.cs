@@ -64,7 +64,8 @@ namespace winforms_chat.ChatForm
 
             chatItem.ResizeBubbles((int)(itemsPanel.Width * 0.6));
 
-            itemsPanel.ScrollControlIntoView(chatItem);
+            //itemsPanel.ScrollControlIntoView(chatItem);
+            ScrollToBottom();
         }
 
         //Improves the chat UI slightly by having a placeholder text. Note that this is implemented because Winforms doesn't have a native "placeholder" UI. Can be buggy.
@@ -229,6 +230,7 @@ namespace winforms_chat.ChatForm
                 // still generating — update this one
                 tm.Body = text;
                 top.UpdateText(text);
+                ScrollToBottom();
             }
             else
             {
@@ -337,5 +339,27 @@ namespace winforms_chat.ChatForm
         {
 
         }
+
+        private void ScrollToBottom()
+        {
+            var vs = itemsPanel.VerticalScroll;
+
+            // WinForms quirk: Value cannot exceed Maximum - LargeChange + 1
+            int maxValue = vs.Maximum - vs.LargeChange + 1;
+            if (maxValue < 0)
+                maxValue = 0;
+
+            try
+            {
+                vs.Value = maxValue;
+            }
+            catch
+            {
+                // Just in case; sometimes setting Value can throw if layout's in a weird state
+            }
+
+            itemsPanel.PerformLayout();
+        }
+
     }
 }
